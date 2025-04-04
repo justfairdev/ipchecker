@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package ipchecker.v1;
+option go_package = "github.com/justfairdev/ipchecker/proto/ipchecker;ipchecker";
+// The IPCheckRequest message includes the IP address and a list of allowed countries.
+message IPCheckRequest {
+  string ip_address = 1;
+  repeated string allowed_countries = 2;
+}
+
+// The IPCheckResponse message indicates if the IP is allowed and the resulting country code.
+message IPCheckResponse {
+  bool allowed = 1;
+  string country = 2;
+}
+
+// IPChecker service for checking an IP against allowed countries.
+service IPChecker {
+  // CheckIP returns whether the IP is in the allowed list.
+  rpc CheckIP(IPCheckRequest) returns (IPCheckResponse);
+}

@@ -1,0 +1,59 @@
+definitions:
+  dtos.IPCheckRequest:
+    properties:
+      allowed_countries:
+        items:
+          type: string
+        type: array
+      ip_address:
+        type: string
+    required:
+    - allowed_countries
+    - ip_address
+    type: object
+  dtos.IPCheckResponse:
+    properties:
+      allowed:
+        type: boolean
+      country:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /ip-check:
+    post:
+      consumes:
+      - application/json
+      description: Takes an IP address & list of allowed countries, returns whether
+        it's allowed.
+      parameters:
+      - description: IP Check Payload
+        in: body
+        name: requestBody
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.IPCheckRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.IPCheckResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Check if IP is in allowed countries
+      tags:
+      - IP
+swagger: "2.0"
