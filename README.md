@@ -182,3 +182,7 @@ kubectl get services
 ```
 kubectl port-forward svc/ipchecker-service 8080:8080
 ```
+
+### AI Coding Assistance
+
+In this project, I utilized ChatGPT to assist with specific coding tasks, particularly for generating partial code snippets related to repetitive and non-logical sections. Sometimes, helped me to solve some errors. However, I structured the entire project and thoroughly reviewed all the generated code to ensure it met the project's standards and functionality.
