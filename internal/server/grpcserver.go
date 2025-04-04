@@ -1,34 +1,47 @@
 package server
 
 import (
-    "github.com/justfairdev/ipchecker/internal/geo"
-    "github.com/justfairdev/ipchecker/internal/grpcserver"
+	"github.com/justfairdev/ipchecker/internal/geo"
+	"github.com/justfairdev/ipchecker/internal/grpcserver"
+	"github.com/justfairdev/ipchecker/internal/logger"
 	"github.com/justfairdev/ipchecker/internal/middleware"
-    "github.com/justfairdev/ipchecker/internal/logger"
-    pb "github.com/justfairdev/ipchecker/proto"
-    "google.golang.org/grpc"
-    "google.golang.org/grpc/reflection"
+	pb "github.com/justfairdev/ipchecker/proto"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
-// NewGRPCServer creates a gRPC server, registers reflection & the IP checker service.
+// NewGRPCServer constructs, configures, and returns a new gRPC server instance.
+//
+// This setup includes the following configurations:
+//   - Structured logging using the configured Zap logger.
+//   - Unary interceptor middleware for detailed logging of RPC requests and responses.
+//   - Reflection service registration to support clients such as grpcurl and grpc_cli.
+//   - Registration of the IPChecker service implementation for handling IP-check requests.
+//
+// Parameters:
+//   - geoService: a GeoLookupService implementation used by the IPChecker server to perform geographic lookups.
+//
+// Returns:
+//   - *grpc.Server: A fully configured gRPC server instance.
+//   - error: An initialization error, if logger or server setup fails.
 func NewGRPCServer(geoService *geo.GeoLookupService) (*grpc.Server, error) {
-    // 1) Create logger
-    log, err := logger.NewLogger()
-    if err != nil {
-        return nil, err
-    }
+	// Initialize application logger with structured JSON output.
+	log, err := logger.NewLogger()
+	if err != nil {
+		return nil, err
+	}
 
-    // 2) Construct the gRPC server (optionally attach interceptors)
-    grpcSrv := grpc.NewServer(
-        grpc.UnaryInterceptor(middleware.UnaryLoggingInterceptor(log)),
-    )
+	// Create gRPC server with logging interceptor middleware for comprehensive request tracing.
+	grpcSrv := grpc.NewServer(
+		grpc.UnaryInterceptor(middleware.UnaryLoggingInterceptor(log)),
+	)
 
-    // 3) Optionally enable reflection so grpcurl & others can discover services
-    reflection.Register(grpcSrv)
+	// Enable gRPC reflection to facilitate service discovery by reflection-enabled clients.
+	reflection.Register(grpcSrv)
 
-    // 4) Register your actual service implementation
-    impl := grpcserver.NewIPCheckerServer(geoService)
-    pb.RegisterIPCheckerServer(grpcSrv, impl)
+	// Instantiate and register the IPChecker service handler implementation.
+	ipCheckerService := grpcserver.NewIPCheckerServer(geoService)
+	pb.RegisterIPCheckerServer(grpcSrv, ipCheckerService)
 
-    return grpcSrv, nil
+	return grpcSrv, nil
 }

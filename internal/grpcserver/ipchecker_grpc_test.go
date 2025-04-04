@@ -1,97 +1,117 @@
-package grpcserver_test
+package grpcserver_test  
 
-import (
-	
-	"context"
-	"errors"
-	"net"
-	"testing"
-	"log"
+import (  
+	"context"  
+	"errors"  
+	"log"  
+	"net"  
+	"testing"  
 
-	"github.com/justfairdev/ipchecker/internal/geo"
-	"github.com/justfairdev/ipchecker/internal/grpcserver"
-	pb "github.com/justfairdev/ipchecker/proto"
-	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/test/bufconn"
-)
+	"github.com/justfairdev/ipchecker/internal/geo"  
+	"github.com/justfairdev/ipchecker/internal/grpcserver"  
+	pb "github.com/justfairdev/ipchecker/proto"  
+	"github.com/stretchr/testify/assert"  
+	"google.golang.org/grpc"  
+	"google.golang.org/grpc/test/bufconn"  
+)  
 
-const bufSize = 1024 * 1024
+const bufSize = 1024 * 1024  
 
-// dialer returns a function that dials a bufconn listener.
-func dialer(listener *bufconn.Listener) func(context.Context, string) (net.Conn, error) {
-	return func(ctx context.Context, address string) (net.Conn, error) {
-		return listener.Dial()
-	}
-}
+// dialer returns a connection dialing function used for creating in-memory gRPC connections during testing.  
+//  
+// Parameters:  
+//   - listener: a reference to a bufconn listener.  
+//  
+// Returns:  
+//   - func(context.Context, string) (net.Conn, error): a dialer function suitable for grpc.DialContext.  
+func dialer(listener *bufconn.Listener) func(context.Context, string) (net.Conn, error) {  
+	return func(ctx context.Context, address string) (net.Conn, error) {  
+		return listener.Dial()  
+	}  
+}  
 
-func TestIPCheckerGRPC_CheckIP_Success(t *testing.T) {
-	// Create an in-memory gRPC server using bufconn.
-	listener := bufconn.Listen(bufSize)
-	grpcServer := grpc.NewServer()
+// TestIPCheckerGRPC_CheckIP_Success verifies successful behavior of the gRPC IPChecker Server  
+// when the geo lookup service returns a valid country code.  
+func TestIPCheckerGRPC_CheckIP_Success(t *testing.T) {  
+	// Initialize an in-memory gRPC server using the bufconn package.  
+	listener := bufconn.Listen(bufSize)  
+	grpcServer := grpc.NewServer()  
 
-	// Create a mock geo service that returns "US" (simulate success).
-	mockGeo := geo.NewMockGeoLookupService("US", nil)
-	ipCheckerSvc := grpcserver.NewIPCheckerServer(mockGeo)
-	pb.RegisterIPCheckerServer(grpcServer, ipCheckerSvc)
+	// Create a mock geographical lookup service configured to return "US" as the country code.  
+	mockGeo := geo.NewMockGeoLookupService("US", nil)  
 
-	// Start the server in a goroutine.
-	go func() {
-		if err := grpcServer.Serve(listener); err != nil {
-			log.Fatalf("failed to start servers: %v", err)
-		}
-	}()
+	// Instantiate the IPChecker gRPC server implementation with the mock service.  
+	ipCheckerSvc := grpcserver.NewIPCheckerServer(mockGeo)  
+	pb.RegisterIPCheckerServer(grpcServer, ipCheckerSvc)  
 
-	// Create a client connection to the in-memory server.
-	ctx := context.Background()
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(dialer(listener)), grpc.WithInsecure())
-	assert.NoError(t, err)
-	defer conn.Close()
+	// Serve the gRPC server concurrently for the duration of this test.  
+	go func() {  
+		if err := grpcServer.Serve(listener); err != nil {  
+			log.Fatalf("failed to start gRPC test server: %v", err)  
+		}  
+	}()  
 
-	client := pb.NewIPCheckerClient(conn)
+	// Establish a client connection to the in-memory gRPC server.  
+	ctx := context.Background()  
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(dialer(listener)), grpc.WithInsecure())  
+	assert.NoError(t, err)  
+	defer conn.Close()  
 
-	// Create a valid gRPC request.
-	req := &pb.IPCheckRequest{
-		IpAddress:        "128.101.101.101",
-		AllowedCountries: []string{"US", "CA"},
-	}
-	resp, err := client.CheckIP(ctx, req)
-	assert.NoError(t, err)
-	assert.Equal(t, true, resp.Allowed)
-	assert.Equal(t, "US", resp.Country)
-}
+	client := pb.NewIPCheckerClient(conn)  
 
-func TestIPCheckerGRPC_CheckIP_Failure(t *testing.T) {
-	// Create an in-memory gRPC server using bufconn.
-	listener := bufconn.Listen(bufSize)
-	grpcServer := grpc.NewServer()
+	// Prepare a well-formed test request.  
+	req := &pb.IPCheckRequest{  
+		IpAddress:        "128.101.101.101",  
+		AllowedCountries: []string{"US", "CA"},  
+	}  
 
-	// Create a mock geo service that always returns an error.
-	mockGeo := geo.NewMockGeoLookupService("", errors.New("geo service error"))
-	ipCheckerSvc := grpcserver.NewIPCheckerServer(mockGeo)
-	pb.RegisterIPCheckerServer(grpcServer, ipCheckerSvc)
+	// Execute the gRPC method under testing.  
+	resp, err := client.CheckIP(ctx, req)  
 
-	// Start the server in a goroutine.
-	go func() {
-		if err := grpcServer.Serve(listener); err != nil {
-			log.Fatalf("Server exited with error: %v", err)
-		}
-	}()
+	// Verify expectations and response correctness.  
+	assert.NoError(t, err)  
+	assert.NotNil(t, resp)  
+	assert.True(t, resp.Allowed, "Expected the IP address to be allowed.")  
+	assert.Equal(t, "US", resp.Country, "Expected the IP country code to be 'US'.")  
+}  
 
-	// Create a client connection to the in-memory server.
-	ctx := context.Background()
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(dialer(listener)), grpc.WithInsecure())
-	assert.NoError(t, err)
-	defer conn.Close()
+// TestIPCheckerGRPC_CheckIP_Failure verifies proper handling of an error scenario  
+// when the geo lookup service encounters an internal error.  
+func TestIPCheckerGRPC_CheckIP_Failure(t *testing.T) {  
+	// Initialize an in-memory gRPC test server using bufconn.  
+	listener := bufconn.Listen(bufSize)  
+	grpcServer := grpc.NewServer()  
 
-	client := pb.NewIPCheckerClient(conn)
+	// Configure the mock geographical lookup service to always return an error.  
+	mockGeo := geo.NewMockGeoLookupService("", errors.New("geo service error"))  
 
-	// Create a request; expect an error due to the mock.
-	req := &pb.IPCheckRequest{
-		IpAddress:        "128.101.101.101",
-		AllowedCountries: []string{"US", "CA"},
-	}
-	resp, err := client.CheckIP(ctx, req)
-	assert.Error(t, err)
-	assert.Nil(t, resp)
-}
+	// Instantiate the IPChecker gRPC server implementation with the failing mock service.  
+	ipCheckerSvc := grpcserver.NewIPCheckerServer(mockGeo)  
+	pb.RegisterIPCheckerServer(grpcServer, ipCheckerSvc)  
+
+	// Run the gRPC server concurrently for the test.  
+	go func() {  
+		if err := grpcServer.Serve(listener); err != nil {  
+			log.Fatalf("gRPC test server exited with error: %v", err)  
+		}  
+	}()  
+
+	// Connect to the in-memory gRPC server as a client.  
+	ctx := context.Background()  
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(dialer(listener)), grpc.WithInsecure())  
+	assert.NoError(t, err)  
+	defer conn.Close()  
+
+	client := pb.NewIPCheckerClient(conn)  
+
+	// Send a valid request and expect an error response due to mockGeo's configuration.  
+	req := &pb.IPCheckRequest{  
+		IpAddress:        "128.101.101.101",  
+		AllowedCountries: []string{"US", "CA"},  
+	}  
+
+	// Execute the CheckIP call and assert error conditions.  
+	resp, err := client.CheckIP(ctx, req)  
+	assert.Error(t, err, "Expected error due to simulated geo service error.")  
+	assert.Nil(t, resp, "Expected no response due to internal geo service failure.")  
+}  

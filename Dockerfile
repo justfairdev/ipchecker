@@ -11,7 +11,7 @@ RUN go mod download
 # Copy the entire source code.
 COPY . .
 
-# Build the binary. Adjust the command if your main package path is different.
+# Build the binary. Adjust the command if main package path is different.
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o ipchecker ./cmd/ipchecker
 
 # Run Stage: Use a minimal image

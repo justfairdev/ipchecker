@@ -10,33 +10,48 @@ import (
 	"github.com/justfairdev/ipchecker/internal/server"
 )
 
+// main is the entry point for the IPChecker application.
+//
+// Application Overview:
+//   - Loads configuration settings (ports, database paths, etc.).
+//   - Initializes combined HTTP (Gin) and gRPC servers along with shared dependencies.
+//   - Starts the servers concurrently, making services available to HTTP and gRPC clients.
+//   - Gracefully handles system interrupts (SIGINT, SIGTERM) to safely shut down servers.
+//
+// This structure allows the application to serve multiple client types concurrently, manage graceful shutdown,
+// and provides clear logging for observability and debugging.
 func main() {
-	// 1) Load config
+	// Load application configuration from environment variables, files, or defaults.
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	// 2) Create the combined server
+	// Initialize HTTP/gRPC AppServer with shared dependencies (e.g., GeoLookup database).
 	appServer, err := server.NewAppServer(cfg)
 	if err != nil {
-		log.Fatalf("failed to create server: %v", err)
+		log.Fatalf("Failed to create AppServer: %v", err)
 	}
 
-	// 3) Start servers in a separate goroutine so we can watch for shutdown signals
+	// Start the combined HTTP and gRPC servers concurrently in a separate goroutine.
+	// HTTP listens on the port defined in cfg.HTTPPort, gRPC listens on port "50051" (can be customized).
 	go func() {
-		// HTTP on cfg.HTTPPort, gRPC on 50051 (hard-coded or from config).
 		if err := appServer.Start(cfg.HTTPPort, "50051"); err != nil {
-			log.Fatalf("failed to start servers: %v", err)
+			log.Fatalf("Server encountered an error during startup: %v", err)
 		}
 	}()
 
-	// 4) Listen for OS signals (Ctrl+C, Docker stop, etc.) for graceful shutdown
+	// Set up OS signal channel to listen for termination signals (Ctrl+C, Docker/Kubernetes shutdown, etc.).
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Block execution until a shutdown signal is received.
 	<-quit
 
-	log.Println("Shutting down servers...")
+	log.Println("Shutdown signal received, gracefully stopping servers...")
+
+	// Gracefully shut down both gRPC server and safely release resources (GeoLookup database connections, etc.).
 	appServer.Stop()
-	log.Println("Done.")
+
+	log.Println("All servers stopped successfully. Exiting.")
 }
