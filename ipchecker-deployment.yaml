@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ipchecker-deployment
+  labels:
+    app: ipchecker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ipchecker
+  template:
+    metadata:
+      labels:
+        app: ipchecker
+    spec:
+      containers:
+        - name: ipchecker
+          image: justfairdev/ipchecker:latest
+          ports:
+            - containerPort: 8080
+              name: http
+            - containerPort: 50051
+              name: grpc
+          env:
+            - name: HTTP_PORT
+              value: "8080"
+            - name: MAXMIND_DB_PATH
+              value: "./GeoLite2-Country.mmdb"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ipchecker-service
+  labels:
+    app: ipchecker
+spec:
+  type: ClusterIP
+  selector:
+    app: ipchecker
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+    - name: grpc
+      port: 50051
+      targetPort: 50051

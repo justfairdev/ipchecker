@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  ipchecker:
+    image: justfairdev/ipchecker:latest
+    ports:
+      - "8080:8080"   # Exposes HTTP endpoint
+      - "50051:50051" # Exposes gRPC endpoint
+    environment:
+      - HTTP_PORT=8080
+      - MAXMIND_DB_PATH=./GeoLite2-Country.mmdb
+    restart: always
