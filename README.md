@@ -31,46 +31,46 @@ IPChecker is a Go-based service that checks whether a given IP address belongs t
 ## Project Structure
 ```bash
 ipchecker/
-├── cmd/  
-│   └── ipchecker/  
-│       └── main.go                   # Application entrypoint  
-├── docs/  
-│   ├── docs.go                       # Swagger documentation initialization  
-│   ├── swagger.json                  # Generated Swagger documentation (JSON)  
-│   └── swagger.yaml                  # Generated Swagger documentation (YAML)  
-├── internal/  
-│   ├── config/  
-│   │   └── config.go                 # Application configuration (port, DB path, etc.)  
-│   ├── dtos/  
-│   │   └── ip.go                     # Data Transfer Objects (DTOs) for IP checking  
-│   ├── geo/  
-│   │   ├── geolookup.go              # GeoLookup service implementation using MaxMind DB  
-│   │   └── mock_geo.go               # Mock GeoLookup service for unit tests  
-│   ├── grpcserver/  
-│   │   ├── ipchecker_grpc.go         # gRPC IPChecker service implementation  
-│   │   └── ipchecker_grpc_test.go    # gRPC service unit tests  
-│   ├── handler/  
-│   │   ├── iphandler.go              # HTTP handler (Gin) for IP checking  
-│   │   └── iphandler_test.go         # HTTP handler unit tests  
-│   ├── logger/  
+├── cmd/
+│   └── ipchecker/
+│       └── main.go                   # Application entrypoint
+├── docs/
+│   ├── docs.go                       # Swagger documentation initialization
+│   ├── swagger.json                  # Generated Swagger documentation (JSON)
+│   └── swagger.yaml                  # Generated Swagger documentation (YAML)
+├── internal/
+│   ├── config/
+│   │   └── config.go                 # Application configuration (port, DB path, etc.)
+│   ├── dtos/
+│   │   └── ip.go                     # Data Transfer Objects (DTOs) for IP checking
+│   ├── geo/
+│   │   ├── geolookup.go              # GeoLookup service implementation using MaxMind DB
+│   │   └── mock_geo.go               # Mock GeoLookup service for unit tests
+│   ├── grpcserver/
+│   │   ├── ipchecker_grpc.go         # gRPC IPChecker service implementation
+│   │   └── ipchecker_grpc_test.go    # gRPC service unit tests
+│   ├── handler/
+│   │   ├── iphandler.go              # HTTP handler (Gin) for IP checking
+│   │   └── iphandler_test.go         # HTTP handler unit tests
+│   ├── logger/
 │   │   └── logger.go                 # Logger setup using Zap
-│   ├── middleware/  
-│   │   ├── gin_logger.go             # Middleware for HTTP request logging and recovery  
-│   │   └── grpc_logger.go            # Middleware interceptors for gRPC request logging  
-│   └── server/  
-│       ├── appserver.go              # Combined HTTP and gRPC servers with common dependencies  
-│       ├── grpcserver.go             # gRPC server setup and configuration  
-│       ├── httpserver.go             # HTTP (Gin) server setup and configuration  
-│       └── router.go                 # HTTP route definitions and registrations  
-├── proto/  
-│   ├── ipchecker.proto               # Protocol Buffers definitions for gRPC service  
-│   ├── ipchecker.pb.go               # Generated protobuf message types  
-│   └── ipchecker_grpc.pb.go          # Generated gRPC service bindings  
-├── Dockerfile                        # Dockerfile for containerizing the application  
-├── docker-compose.yaml               # Docker Compose file to orchestrate services  
-├── GeoLite2-Country.mmdb             # MaxMind geo database (do NOT track if license restricts)  
-├── go.mod                            # Go module dependencies specification  
-├── go.sum                            # Checksum file for Go module dependencies  
+│   ├── middleware/
+│   │   ├── gin_logger.go             # Middleware for HTTP request logging and recovery
+│   │   └── grpc_logger.go            # Middleware interceptors for gRPC request logging
+│   └── server/
+│       ├── appserver.go              # Combined HTTP and gRPC servers with common dependencies
+│       ├── grpcserver.go             # gRPC server setup and configuration
+│       ├── httpserver.go             # HTTP (Gin) server setup and configuration
+│       └── router.go                 # HTTP route definitions and registrations
+├── proto/
+│   ├── ipchecker.proto               # Protocol Buffers definitions for gRPC service
+│   ├── ipchecker.pb.go               # Generated protobuf message types
+│   └── ipchecker_grpc.pb.go          # Generated gRPC service bindings
+├── Dockerfile                        # Dockerfile for containerizing the application
+├── docker-compose.yaml               # Docker Compose file to orchestrate services
+├── GeoLite2-Country.mmdb             # MaxMind geo database (do NOT track if license restricts)
+├── go.mod                            # Go module dependencies specification
+├── go.sum                            # Checksum file for Go module dependencies
 └── coverage.out                      # Test coverage report (generated via "go test")
 ```
 
